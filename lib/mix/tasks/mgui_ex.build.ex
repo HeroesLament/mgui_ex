@@ -30,7 +30,19 @@ defmodule Mix.Tasks.MguiEx.Build do
   @impl Mix.Task
   def run(args) do
     release? = "--release" in args
-    swift_dir = Path.join(File.cwd!(), "swift")
+
+    # Find swift/ dir: either in project root (standalone) or in deps/mgui_ex/ (as dep)
+    swift_dir =
+      cond do
+        File.dir?(Path.join(File.cwd!(), "swift")) ->
+          Path.join(File.cwd!(), "swift")
+
+        File.dir?(Path.join([File.cwd!(), "deps", "mgui_ex", "swift"])) ->
+          Path.join([File.cwd!(), "deps", "mgui_ex", "swift"])
+
+        true ->
+          Mix.raise("Cannot find mgui_ex swift/ directory")
+      end
 
     # Step 1: Build Swift
     config = if release?, do: "-c release", else: ""
@@ -85,16 +97,21 @@ defmodule Mix.Tasks.MguiEx.Build do
 
     Mix.shell().info("App bundle created: #{app_dir}")
 
-    # Step 4: For release, also copy to priv/
-    if release? do
-      priv_dir = Path.join(File.cwd!(), "priv")
-      priv_app = Path.join(priv_dir, "#{@app_name}.app")
-      File.rm_rf!(priv_app)
-      File.mkdir_p!(priv_dir)
-      # Copy entire .app bundle
-      {_, 0} = System.cmd("cp", ["-R", app_dir, priv_app])
-      Mix.shell().info("Release bundle copied to: #{priv_app}")
-    end
+    # Step 4: Copy to priv/ (required when used as a dep)
+    priv_dir =
+      if File.dir?(Path.join(File.cwd!(), "swift")) do
+        Path.join(File.cwd!(), "priv")
+      else
+        :code.priv_dir(:mgui_ex) |> to_string()
+      end
+
+    priv_app = Path.join(priv_dir, "#{@app_name}.app")
+    priv_binary = Path.join(priv_dir, "mgui_ex_runtime")
+    File.rm_rf!(priv_app)
+    File.mkdir_p!(priv_dir)
+    {_, 0} = System.cmd("cp", ["-R", app_dir, priv_app])
+    File.cp!(binary_path, priv_binary)
+    Mix.shell().info("Installed to: #{priv_dir}")
 
     :ok
   end
