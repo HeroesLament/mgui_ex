@@ -1,0 +1,28 @@
+# Elixir
+/_build/
+/deps/
+/doc/
+*.ez
+erl_crash.dump
+*.beam
+
+# Rust / Cargo
+/target/
+native/*/target/
+**/*.rs.bk
+Cargo.lock
+
+# NIF build artifacts
+priv/native/
+
+# Swift / SPM
+swift/.build/
+swift/Package.resolved
+swift/.swiftpm/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Mix
+mix.lock
