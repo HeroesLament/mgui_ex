@@ -184,6 +184,14 @@ defmodule MguiEx.SwiftPort do
       File.exists?(dev_bare_binary()) ->
         dev_bare_binary()
 
+      # Dep .app bundle (when mgui_ex is a dep, built via mix mgui_ex.build)
+      File.exists?(dep_app_binary()) ->
+        dep_app_binary()
+
+      # Dep bare binary
+      File.exists?(dep_bare_binary()) ->
+        dep_bare_binary()
+
       # Production: check priv/ for .app bundle first
       File.exists?(priv_app_binary()) ->
         priv_app_binary()
@@ -211,6 +219,14 @@ defmodule MguiEx.SwiftPort do
     :code.priv_dir(:mgui_ex)
     |> to_string()
     |> Path.join("mgui_ex_runtime")
+  end
+
+  defp dep_app_binary do
+    Path.join([File.cwd!(), "deps", "mgui_ex", "swift", ".build", "MguiExRuntime.app", "Contents", "MacOS", "MguiExRuntime"])
+  end
+
+  defp dep_bare_binary do
+    Path.join([File.cwd!(), "deps", "mgui_ex", "swift", ".build", "arm64-apple-macosx", "debug", "MguiExRuntime"])
   end
 
   defp try_get_global_handler do
