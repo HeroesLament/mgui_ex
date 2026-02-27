@@ -11,6 +11,11 @@ struct RawMessage: Codable {
         let statusBar: StatusBarConfig?
         let menu: [MenuItem]?
 
+        // Window fields
+        let windowId: String?
+        let width: Double?
+        let height: Double?
+
         // Notification fields (flattened from payload)
         let id: String?
         let title: String?
@@ -22,6 +27,34 @@ struct RawMessage: Codable {
         struct StatusBarConfig: Codable {
             let title: String?
             let icon: String?
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case root, statusBar, menu
+            case windowId, width, height
+            case id, title, body, subtitle, sound, actions
+        }
+
+        private static func decodeDouble(from container: KeyedDecodingContainer<CodingKeys>, key: CodingKeys) -> Double? {
+            if let v = try? container.decode(Double.self, forKey: key) { return v }
+            if let v = try? container.decode(Int.self, forKey: key) { return Double(v) }
+            return nil
+        }
+
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            root      = try c.decodeIfPresent(ViewNode.self, forKey: .root)
+            statusBar = try c.decodeIfPresent(StatusBarConfig.self, forKey: .statusBar)
+            menu      = try c.decodeIfPresent([MenuItem].self, forKey: .menu)
+            windowId  = try c.decodeIfPresent(String.self, forKey: .windowId)
+            width     = Self.decodeDouble(from: c, key: .width)
+            height    = Self.decodeDouble(from: c, key: .height)
+            id        = try c.decodeIfPresent(String.self, forKey: .id)
+            title     = try c.decodeIfPresent(String.self, forKey: .title)
+            body      = try c.decodeIfPresent(String.self, forKey: .body)
+            subtitle  = try c.decodeIfPresent(String.self, forKey: .subtitle)
+            sound     = try c.decodeIfPresent(Bool.self, forKey: .sound)
+            actions   = try c.decodeIfPresent([[String: String]].self, forKey: .actions)
         }
     }
 

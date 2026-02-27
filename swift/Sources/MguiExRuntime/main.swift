@@ -7,6 +7,7 @@ app.setActivationPolicy(.accessory)
 let writer = StdoutWriter()
 let statusBar = StatusBarController(writer: writer)
 let notifications = NotificationManager(writer: writer)
+let windowManager = WindowManager(writer: writer)
 notifications.requestPermission()
 
 // Set up stdin reader — receives messages from Elixir Port
@@ -21,6 +22,23 @@ reader.onMessage = { message in
         )
         if let menuItems = message.payload?.menu {
             statusBar.updateMenu(menuItems)
+        }
+
+    case "window":
+        if let root = message.payload?.root,
+           let windowId = message.payload?.windowId {
+            windowManager.openWindow(
+                id: windowId,
+                root: root,
+                title: message.payload?.title,
+                width: message.payload?.width,
+                height: message.payload?.height
+            )
+        }
+
+    case "close_window":
+        if let windowId = message.payload?.windowId {
+            windowManager.closeWindow(id: windowId)
         }
 
     case "notify":

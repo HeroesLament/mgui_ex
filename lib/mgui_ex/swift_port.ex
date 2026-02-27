@@ -55,6 +55,35 @@ defmodule MguiEx.SwiftPort do
     GenServer.cast(__MODULE__, :quit)
   end
 
+  @doc """
+  Open a native window with a view tree.
+
+  ## Options
+    * `:title` - window title
+    * `:width` - window width (default 300)
+    * `:height` - window height (default 200)
+
+  ## Example
+
+      import MguiEx.View
+
+      tree = vstack([spacing: 12], [
+        text("About My App") |> font([fontName: "title2"]),
+        text("v1.0.0") |> fg("secondary"),
+        button("Close", id: "btn-close")
+      ]) |> pad(20)
+
+      MguiEx.SwiftPort.open_window("about", tree, title: "About", width: 280, height: 200)
+  """
+  def open_window(window_id, tree, opts \\ []) do
+    GenServer.cast(__MODULE__, {:open_window, window_id, tree, opts})
+  end
+
+  @doc "Close a window by id."
+  def close_window(window_id) do
+    GenServer.cast(__MODULE__, {:close_window, window_id})
+  end
+
   @doc "Send a notification to the Swift side for display."
   def send_notification(notification_map) do
     GenServer.cast(__MODULE__, {:send_notification, notification_map})
@@ -107,6 +136,27 @@ defmodule MguiEx.SwiftPort do
 
   def handle_cast(:quit, state) do
     send_msg(state.port, %{"type" => "quit", "payload" => %{}})
+    {:noreply, state}
+  end
+
+  def handle_cast({:open_window, window_id, tree, opts}, state) do
+    msg = %{
+      "type" => "window",
+      "payload" => %{
+        "windowId" => window_id,
+        "root" => tree,
+        "title" => Keyword.get(opts, :title),
+        "width" => Keyword.get(opts, :width),
+        "height" => Keyword.get(opts, :height)
+      }
+    }
+
+    send_msg(state.port, msg)
+    {:noreply, state}
+  end
+
+  def handle_cast({:close_window, window_id}, state) do
+    send_msg(state.port, %{"type" => "close_window", "payload" => %{"windowId" => window_id}})
     {:noreply, state}
   end
 
